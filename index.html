@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Cálculo de Indeterminaciones</title>
+    <style>
+		button{
+			background-color: #2D97DF;
+			width: 100px;
+			height: 50px;
+		}
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            font-size: 18px;
+            text-align: left;
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #0094F5;
+			text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <h1>
+        $$ Y = \frac{\sqrt{\ln(1 + x)} + \arccos(y)}{\sqrt{z}} + \frac{\arcsin\left(\frac{\ln(z + x)}{y}\right) + \arcsin(z)}{\arccos\left(\frac{z}{\sqrt{x}}\right)} $$
+    </h1>
+	<font face="Arial">
+    <h2>Cálculo de Indeterminaciones</h2>
+    <p>Presiona el botón para calcular los puntos por indeterminaciones en 1000 ciclos:</p>
+	<div style = "text-align: center";>
+		<button onclick="calcular()">Procesar</button>
+	</div>
+<hr>
+    <p id="resultado"></p>
+    <canvas id="Grafica"></canvas>
+	</font>
+    <script>
+        function calcular() {
+            let IndetArcsin = 0;
+            let IndetArcos = 0;
+            let IndeRaiz = 0;
+            let IndetDiv = 0;
+            let IndetLog = 0;            
+            for (let i = 0; i < 1000; i++) {
+                function getRandomInteger() {
+                    return Math.random() * 2 - 1;
+                }
+                
+                let x = getRandomInteger();
+                let y = getRandomInteger();
+                let z = getRandomInteger();
+
+
+                // Logaritmo
+                if (z + x <= 0) {
+                    IndetLog += 1;  
+                } else {
+                    let Result1 = Math.log(2 - x);
+                    if (y === 0) {
+                        IndetDiv += 1;
+                    } else {
+                        let Result2;
+                        let asinInput = Result1 / y;
+                        if (asinInput < -1 || asinInput > 1) {
+                            IndetArcsin += 1;
+                        } else {
+                            try {
+                                Result2 = Math.asin(asinInput) + Math.asin(z);
+                            } catch (e) {
+                                IndetArcsin += 1;
+                            }
+                        }
+                        if (x < 0) {
+                            IndeRaiz += 1;
+                        } else {
+                            let Result3 = Math.sqrt(x);
+                            if (Result3 === 0) {
+                                IndetDiv += 1;
+                            } else {
+                                let acosInput = z / Result3;
+                                if (acosInput < -1 || acosInput > 1) {
+                                    IndetArcos += 1;
+                                } else {
+                                    try {
+                                        let Result4 = Result2 / Math.acos(acosInput);
+                                    } catch (e) {
+                                        IndetArcos += 1;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Raíces Cuadradas
+                if (x <= 0) {
+                    IndetLog += 1;  
+                } else {
+                    let Result5 = Math.log(1 + x);
+                    if (Result5 < 0) {
+                        IndeRaiz += 1;
+                    } else {
+                        let Result6;
+                        let acosInput = y;
+                        if (acosInput < -1 || acosInput > 1) {
+                            IndetArcos += 1;
+                        } else {
+                            try {
+                                Result6 = Math.sqrt(Result5) + Math.acos(acosInput);
+                            } catch (e) {
+                                IndetArcos += 1;
+                            }
+                        }
+                        if (z < 0) {
+                            IndetDiv += 1;
+                        } else {
+                            try {
+                                let Result7 = Result6 / Math.sqrt(z);
+                            } catch (e) {
+                                IndetDiv += 1;
+                            }
+                        }
+                    }
+                }
+            }
+			
+
+            document.getElementById("resultado").innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tipo de Indeterminación</th>
+                            <th>Totales</th>
+                            <th>Porcentaje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Errores en Logaritmos</td>
+                            <td>${IndetLog}</td>
+                            <td>${(IndetLog / 1000) * 100}%</td>
+                        </tr>
+                        <tr>
+                            <td>Errores en Raíces Cuadradas</td>
+                            <td>${IndeRaiz}</td>
+                            <td>${(IndeRaiz / 1000) * 100}%</td>
+                        </tr>
+                        <tr>
+                            <td>Errores en Divisiones</td>
+                            <td>${IndetDiv}</td>
+                            <td>${(IndetDiv / 1000) * 100}%</td>
+                        </tr>
+                        <tr>
+                            <td>Errores en Arcoseno</td>
+                            <td>${IndetArcsin}</td>
+                            <td>${(IndetArcsin / 1000) * 100}%</td>
+                        </tr>
+                        <tr>
+                            <td>Errores en Arcocoseno</td>
+                            <td>${IndetArcos}</td>
+                            <td>${(IndetArcos / 1000) * 100}%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+
+            const ctx = document.getElementById('Grafica').getContext('2d');
+            const myPieChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Errores en Arcoseno', 'Errores en Arcocoseno', 'Errores en Logaritmos', 'Errores en Raíces Cuadradas', 'Errores en Divisiones'],
+                    datasets: [{
+                        data: [IndetArcsin, IndetArcos, IndetLog, IndeRaiz, IndetDiv],
+                        backgroundColor: ['#FF6384', '#36A2EB', '#4BC0C0', '#02CC15', '#F51600'],
+                    }]
+                },
+                options: {
+                    responsive: true
+                },
+            });
+        }
+    </script>
+</body>
+</html>
